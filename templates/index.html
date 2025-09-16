@@ -4,18 +4,119 @@
   <title>Møtebooking</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body { font-family: sans-serif; margin: 2rem; }
-    table { border-collapse: collapse; width: 100%; }
-    th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: center; }
-    td.selectable { cursor: pointer; }
-    td.selected { background-color: #90cdf4; }
-    .controls { margin-top: 1rem; }
-    .controls label { display: block; margin-bottom: 0.5rem; }
+    body {
+      font-family: system-ui, sans-serif;
+      margin: 2rem;
+      background: #f9f9f9;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      table-layout: fixed;
+      background: white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    th, td {
+      border: 1px solid #eee;
+      padding: 0.75rem;
+      text-align: center;
+      vertical-align: middle;
+      transition: background 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    th {
+      background: #fafafa;
+      font-weight: 600;
+    }
+
+    td.selectable {
+      cursor: pointer;
+      background-color: #fff;
+    }
+
+    td.selectable:hover {
+      background-color: #f0f8ff;
+    }
+
+    td.selected {
+      background-color: #2b6cb0 !important;
+      color: white;
+      font-weight: bold;
+      border: 2px solid #2b6cb0;
+    }
+
+    td.selectable.booked {
+      background-color: #f9f9f9;
+      color: #999;
+      cursor: not-allowed;
+    }
+
+    .controls {
+      margin-top: 2rem;
+      background: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+    }
+
+    .controls label {
+      display: block;
+      margin-bottom: 0.75rem;
+      font-weight: 500;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="week"] {
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      width: 100%;
+      max-width: 300px;
+      margin-top: 0.25rem;
+    }
+
+    button {
+      background: #2b6cb0;
+      color: white;
+      border: none;
+      padding: 0.6rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-top: 1rem;
+    }
+
+    button:hover {
+      background: #2c5282;
+    }
+
+    .delete-btn {
+      background: #e53e3e;
+      color: white;
+      border: none;
+      padding: 0.3rem 0.6rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .delete-btn:hover {
+      background: #c53030;
+    }
+
     .print-hide { display: block; }
+
     @media print {
       .print-hide { display: none; }
+      th, td { font-size: 10px; padding: 4px; }
     }
   </style>
+
 </head>
 <body>
   <h1>Uke {{ week }}</h1>
