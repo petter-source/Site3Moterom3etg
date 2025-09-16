@@ -57,7 +57,7 @@ def book():
     week = data["week"]
     name = data["name"]
     slots = data["slots"]  # list of {"day": "Monday", "time": "07:00"}
-    repeat = data.get("repeat", False)
+    repeat = str(data.get("repeat", "false")).lower() == "true"
     pin = data.get("pin", "")
     for slot in slots:
         cursor.execute(
