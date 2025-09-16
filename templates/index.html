@@ -120,11 +120,10 @@
 </head>
 <body>
   <h1>Uke {{ week }}</h1>
-  <form method="get" class="print-hide">
+  <form method="get" class="print-hide" id="week-form">
     <label>Velg uke:
-      <input type="week" name="week" value="{{ week }}">
+      <input type="week" name="week" value="{{ week }}" onchange="document.getElementById('week-form').submit();">
     </label>
-    <button type="submit">Last</button>
   </form>
 
   <table id="slot-table">
