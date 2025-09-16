@@ -36,8 +36,10 @@ def index():
     week = request.args.get(
         "week") or f"{today.isocalendar()[0]}-W{today.isocalendar()[1]:02d}"
     cursor.execute(
-        "SELECT id, weekday, time, name FROM bookings WHERE week_iso = %s",
-        (week, ))
+        """
+        SELECT id, weekday, time, name FROM bookings
+        WHERE week_iso = %s OR repeat = true
+    """, (week, ))
     rows = cursor.fetchall()
     bookings = {(d, t): {"id": i, "name": n} for i, d, t, n in rows}
     return render_template("index.html",
