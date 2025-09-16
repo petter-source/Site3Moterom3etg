@@ -3,10 +3,10 @@
 on:
   push:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '*/1 * * * *'
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "✅ Cron og push trigger virker"
+      - run: echo " Cron og push trigger virker"
