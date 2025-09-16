@@ -1,0 +1,15 @@
+﻿name: Keep Render Alive
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render
+        run: |
+          echo "Pinger Render..."
+          curl -I https://site3moterom3etg.onrender.com/ || echo "Ping failed"
