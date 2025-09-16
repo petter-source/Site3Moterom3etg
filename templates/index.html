@@ -1,0 +1,126 @@
+<!doctype html>
+<html>
+<head>
+  <title>Møtebooking</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: sans-serif; margin: 2rem; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: center; }
+    td.selectable { cursor: pointer; }
+    td.selected { background-color: #90cdf4; }
+    .controls { margin-top: 1rem; }
+    .controls label { display: block; margin-bottom: 0.5rem; }
+    .print-hide { display: block; }
+    @media print {
+      .print-hide { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Uke {{ week }}</h1>
+  <form method="get" class="print-hide">
+    <label>Velg uke:
+      <input type="week" name="week" value="{{ week }}">
+    </label>
+    <button type="submit">Last</button>
+  </form>
+
+  <table id="slot-table">
+    <tr>
+      <th>Klokkeslett</th>
+      {% for day in days %}<th>{{ day }}</th>{% endfor %}
+    </tr>
+    {% for time in times %}
+    <tr>
+      <td>{{ time }}</td>
+      {% for day in days %}
+        {% set booking = bookings.get((day, time)) %}
+        <td class="selectable" data-day="{{day}}" data-time="{{time}}" data-id="{{ booking.id if booking }}">
+          {% if booking %}
+            {{ booking.name }}<br>
+            <button class="delete-btn print-hide" data-id="{{ booking.id }}">✖</button>
+          {% endif %}
+        </td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </table>
+
+  <div class="controls print-hide">
+    <label>Navn på møte:
+      <input type="text" id="meeting-name">
+    </label>
+    <label>PIN-kode (for å kunne slette senere):
+      <input type="password" id="pin">
+    </label>
+    <label>
+      <input type="checkbox" id="repeat-weekly"> Gjenta hver uke
+    </label>
+    <p><strong>Valgt tid:</strong> <span id="selection-summary">Ingen valgt</span></p>
+    <button id="book-button">Book tid</button>
+  </div>
+
+  <script>
+    let selected = [];
+
+    const updateSummary = () => {
+      if (selected.length == 0) {
+        document.getElementById("selection-summary").textContent = "Ingen valgt";
+        return;
+      }
+      const times = selected.map(s => s.time).sort();
+      const day = selected[0].day;
+      document.getElementById("selection-summary").textContent = `${day}: ${times[0]} - ${times[times.length - 1]}`;
+    };
+
+    document.querySelectorAll("td.selectable").forEach(td => {
+      td.addEventListener("click", () => {
+        if (td.querySelector("button")) return;  // Skip booked
+        const day = td.dataset.day;
+        const time = td.dataset.time;
+        const idx = selected.findIndex(s => s.day === day && s.time === time);
+        if (idx >= 0) {
+          selected.splice(idx, 1);
+          td.classList.remove("selected");
+        } else {
+          selected.push({ day, time });
+          td.classList.add("selected");
+        }
+        updateSummary();
+      });
+    });
+
+    document.getElementById("book-button").addEventListener("click", async () => {
+      const name = document.getElementById("meeting-name").value.trim();
+      const repeat = document.getElementById("repeat-weekly").checked;
+      const pin = document.getElementById("pin").value.trim();
+      if (!name || selected.length === 0 || !pin) return alert("Fyll inn navn, PIN og velg tider.");
+
+      const res = await fetch("/book", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ week: "{{ week }}", name, slots: selected, repeat, pin })
+      });
+
+      if (res.ok) location.reload();
+    });
+
+    document.querySelectorAll(".delete-btn").forEach(btn => {
+      btn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.id;
+        const pin = prompt("Skriv inn PIN for å slette booking:");
+        if (!pin) return;
+        const res = await fetch("/delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, pin })
+        });
+        if (res.ok) location.reload();
+        else alert("Feil PIN eller booking finnes ikke.");
+      });
+    });
+  </script>
+</body>
+</html>
