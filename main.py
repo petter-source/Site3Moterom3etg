@@ -36,7 +36,9 @@ def index():
 
 @app.route("/book", methods=["POST"])
 def book():
-    data = request.json
+    data = request.get_json()
+    if not data:
+        return jsonify({"status": "error", "message": "No JSON data"}), 400
     week = data["week"]
     name = data["name"]
     slots = data["slots"]  # list of {"day": "Monday", "time": "07:00"}
@@ -52,7 +54,9 @@ def book():
 
 @app.route("/delete", methods=["POST"])
 def delete():
-    data = request.json
+    data = request.get_json()
+    if not data:
+        return jsonify({"status": "error", "message": "No JSON data"}), 400
     booking_id = data["id"]
     pin = data.get("pin", "")
     cursor.execute("SELECT pin FROM bookings WHERE id = %s", (booking_id,))
@@ -64,4 +68,4 @@ def delete():
     return jsonify({"status": "deleted"})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000)
+    app.run(host='0.0.0.0', port=5000)
