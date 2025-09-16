@@ -85,6 +85,8 @@ def delete():
     return jsonify({"status": "deleted"})
 
 
+print("✅ Connected to:", os.environ.get("PG_CONN_STRING", "NO DB FOUND"))
+
 if __name__ == '__main__':
     import os
     port = int(os.environ.get("PORT", 5000))
