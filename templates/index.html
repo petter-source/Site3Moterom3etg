@@ -115,6 +115,34 @@
       .print-hide { display: none; }
       th, td { font-size: 10px; padding: 4px; }
     }
+    .booking-content {
+      position: relative;
+      display: block;
+      padding-right: 1.5rem;
+      text-align: left;
+      font-size: 0.85rem;
+      line-height: 1.2;
+      min-height: 1.2em;
+    }
+
+    .delete-btn {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      background: #e53e3e;
+      color: white;
+      border: none;
+      padding: 0.2rem 0.5rem;
+      border-radius: 999px;
+      font-size: 0.7rem;
+      line-height: 1;
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .delete-btn:hover {
+      background: #c53030;
+    }
   </style>
 
 </head>
@@ -138,8 +166,10 @@
         {% set booking = bookings.get((day, time)) %}
         <td class="selectable" data-day="{{day}}" data-time="{{time}}" data-id="{{ booking.id if booking }}">
           {% if booking %}
-            {{ booking.name }}<br>
-            <button class="delete-btn print-hide" data-id="{{ booking.id }}">✖</button>
+            <div class="booking-content">
+              {{ booking.name }}
+              <button class="delete-btn print-hide" data-id="{{ booking.id }}">✖</button>
+            </div>
           {% endif %}
         </td>
       {% endfor %}
