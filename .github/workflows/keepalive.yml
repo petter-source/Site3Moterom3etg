@@ -1,7 +1,8 @@
 name: Keep Render Alive
+
 on:
   schedule:
-    - cron: '*/10 * * * *'  # Hvert 10. minutt
+    - cron: '*/10 * * * *'
   workflow_dispatch:
 
 jobs:
@@ -10,5 +11,5 @@ jobs:
     steps:
       - name: Ping Render
         run: |
-          echo "?? Pinger Render..."
+          echo " Pinger Render..."
           curl -I https://site3moterom3etg.onrender.com/ || echo "?? Siden svarte ikke"
