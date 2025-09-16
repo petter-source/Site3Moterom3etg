@@ -1,5 +1,4 @@
 name: Keep Render Alive
-
 on:
   schedule:
     - cron: '*/10 * * * *'  # Hvert 10. minutt
