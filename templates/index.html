@@ -158,7 +158,10 @@
       <input type="checkbox" id="repeat-weekly"> Gjenta hver uke
     </label>
     <p><strong>Valgt tid:</strong> <span id="selection-summary">Ingen valgt</span></p>
-    <button id="book-button">Book tid</button>
+    <div style="display: flex; gap: 1rem; align-items: center;">
+      <button id="book-button">Book tid</button>
+      <button type="button" onclick="window.print()">🖨 Skriv ut</button>
+    </div>
   </div>
 
   <script>
