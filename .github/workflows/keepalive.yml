@@ -9,4 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping Render
-        run: curl --silent --show-error --fail https://site3moterom3etg.onrender.com/ || true
+        run: |
+          echo "?? Pinger Render..."
+          curl -I https://site3moterom3etg.onrender.com/ || echo "?? Siden svarte ikke"
