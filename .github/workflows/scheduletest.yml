@@ -1,6 +1,7 @@
 ﻿name: Schedule Test
 
 on:
+  push:
   schedule:
     - cron: '*/5 * * * *'
 
@@ -8,4 +9,4 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "If you see this in Actions, cron is working."
+      - run: echo "✅ Cron og push trigger virker"
