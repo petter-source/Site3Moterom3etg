@@ -107,13 +107,13 @@ def delete():
     return jsonify({"status": "deleted"})
 
 
+@app.route("/robots.txt")
+def robots():
+    return app.send_static_file("robots.txt")
+
+
 # ▶️ Start Flask-app i Render (riktig port)
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     print("✅ Connected to:", os.environ.get("PG_CONN_STRING", "NO DB FOUND"))
     app.run(host="0.0.0.0", port=port)
-
-
-@app.route("/robots.txt")
-def robots():
-    return app.send_static_file("robots.txt")
