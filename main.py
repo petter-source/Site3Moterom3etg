@@ -25,24 +25,36 @@ with conn.cursor() as cursor:
     conn.commit()
 
 # 📅 Ukedager og tider
-DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-TIMES = [f"{h:02d}:{m:02d}" for h in range(7, 19) for m in (0, 30)]  # 07:00–19:00
+DAYS = [
+    "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday",
+    "Sunday"
+]
+TIMES = [f"{h:02d}:{m:02d}" for h in range(7, 19)
+         for m in (0, 30)]  # 07:00–19:00
+
 
 # 🌐 Forside
 @app.route("/")
 def index():
     today = datetime.date.today()
-    week = request.args.get("week") or f"{today.isocalendar()[0]}-W{today.isocalendar()[1]:02d}"
+    week = request.args.get(
+        "week") or f"{today.isocalendar()[0]}-W{today.isocalendar()[1]:02d}"
 
     with conn.cursor() as cursor:
-        cursor.execute("""
+        cursor.execute(
+            """
             SELECT id, weekday, time, name FROM bookings
             WHERE week_iso = %s OR repeat = true
-        """, (week,))
+        """, (week, ))
         rows = cursor.fetchall()
 
-    bookings = {(d, t): {"id": i, "name": n} for i, d, t, n in rows]
-    return render_template("index.html", week=week, days=DAYS, times=TIMES, bookings=bookings)
+    bookings = {(d, t): {"id": i, "name": n} for i, d, t, n in rows}
+    return render_template("index.html",
+                           week=week,
+                           days=DAYS,
+                           times=TIMES,
+                           bookings=bookings)
+
 
 # ➕ Lag booking
 @app.route("/book", methods=["POST"])
@@ -59,13 +71,15 @@ def book():
 
     with conn.cursor() as cursor:
         for slot in slots:
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO bookings (week_iso, weekday, time, name, repeat, pin)
                 VALUES (%s, %s, %s, %s, %s, %s)
             """, (week, slot["day"], slot["time"], name, repeat, pin))
         conn.commit()
 
     return jsonify({"status": "ok"})
+
 
 # ❌ Slett booking med PIN
 @app.route("/delete", methods=["POST"])
@@ -78,21 +92,24 @@ def delete():
     pin = data.get("pin", "")
 
     with conn.cursor() as cursor:
-        cursor.execute("SELECT pin FROM bookings WHERE id = %s", (booking_id,))
+        cursor.execute("SELECT pin FROM bookings WHERE id = %s",
+                       (booking_id, ))
         row = cursor.fetchone()
 
         if not row or row[0] != pin:
             return jsonify({"status": "error", "message": "Feil PIN"}), 403
 
-        cursor.execute("DELETE FROM bookings WHERE id = %s", (booking_id,))
+        cursor.execute("DELETE FROM bookings WHERE id = %s", (booking_id, ))
         conn.commit()
 
     return jsonify({"status": "deleted"})
+
 
 # 🤖 robots.txt
 @app.route("/robots.txt")
 def robots():
     return app.send_static_file("robots.txt")
+
 
 # ▶️ Kjør server
 if __name__ == '__main__':
