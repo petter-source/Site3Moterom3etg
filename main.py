@@ -5,24 +5,22 @@ import datetime
 
 app = Flask(__name__)
 
-# 🔐 Connect to PostgreSQL
-conn = psycopg2.connect(os.environ["PG_CONN_STRING"], sslmode='require')
-
-# ✅ Opprett tabell om den ikke finnes
-with conn.cursor() as cursor:
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS bookings (
-            id SERIAL PRIMARY KEY,
-            week_iso TEXT NOT NULL,
-            weekday TEXT NOT NULL,
-            time TEXT NOT NULL,
-            name TEXT NOT NULL,
-            repeat BOOLEAN DEFAULT FALSE,
-            pin TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        );
-    ''')
-    conn.commit()
+# ✅ Initialiser database (én gang ved oppstart)
+with psycopg2.connect(os.environ["PG_CONN_STRING"], sslmode='require') as conn:
+    with conn.cursor() as cursor:
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS bookings (
+                id SERIAL PRIMARY KEY,
+                week_iso TEXT NOT NULL,
+                weekday TEXT NOT NULL,
+                time TEXT NOT NULL,
+                name TEXT NOT NULL,
+                repeat BOOLEAN DEFAULT FALSE,
+                pin TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        ''')
+        conn.commit()
 
 # 📅 Ukedager og tider
 DAYS = [
@@ -40,13 +38,15 @@ def index():
     week = request.args.get(
         "week") or f"{today.isocalendar()[0]}-W{today.isocalendar()[1]:02d}"
 
-    with conn.cursor() as cursor:
-        cursor.execute(
-            """
-            SELECT id, weekday, time, name FROM bookings
-            WHERE week_iso = %s OR repeat = true
-        """, (week, ))
-        rows = cursor.fetchall()
+    with psycopg2.connect(os.environ["PG_CONN_STRING"],
+                          sslmode='require') as conn:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT id, weekday, time, name FROM bookings
+                WHERE week_iso = %s OR repeat = true
+                """, (week, ))
+            rows = cursor.fetchall()
 
     bookings = {(d, t): {"id": i, "name": n} for i, d, t, n in rows}
     return render_template("index.html",
@@ -69,14 +69,16 @@ def book():
     repeat = str(data.get("repeat", "false")).lower() == "true"
     pin = data.get("pin", "")
 
-    with conn.cursor() as cursor:
-        for slot in slots:
-            cursor.execute(
-                """
-                INSERT INTO bookings (week_iso, weekday, time, name, repeat, pin)
-                VALUES (%s, %s, %s, %s, %s, %s)
-            """, (week, slot["day"], slot["time"], name, repeat, pin))
-        conn.commit()
+    with psycopg2.connect(os.environ["PG_CONN_STRING"],
+                          sslmode='require') as conn:
+        with conn.cursor() as cursor:
+            for slot in slots:
+                cursor.execute(
+                    """
+                    INSERT INTO bookings (week_iso, weekday, time, name, repeat, pin)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                    """, (week, slot["day"], slot["time"], name, repeat, pin))
+            conn.commit()
 
     return jsonify({"status": "ok"})
 
@@ -91,16 +93,19 @@ def delete():
     booking_id = data["id"]
     pin = data.get("pin", "")
 
-    with conn.cursor() as cursor:
-        cursor.execute("SELECT pin FROM bookings WHERE id = %s",
-                       (booking_id, ))
-        row = cursor.fetchone()
+    with psycopg2.connect(os.environ["PG_CONN_STRING"],
+                          sslmode='require') as conn:
+        with conn.cursor() as cursor:
+            cursor.execute("SELECT pin FROM bookings WHERE id = %s",
+                           (booking_id, ))
+            row = cursor.fetchone()
 
-        if not row or row[0] != pin:
-            return jsonify({"status": "error", "message": "Feil PIN"}), 403
+            if not row or row[0] != pin:
+                return jsonify({"status": "error", "message": "Feil PIN"}), 403
 
-        cursor.execute("DELETE FROM bookings WHERE id = %s", (booking_id, ))
-        conn.commit()
+            cursor.execute("DELETE FROM bookings WHERE id = %s",
+                           (booking_id, ))
+            conn.commit()
 
     return jsonify({"status": "deleted"})
 
