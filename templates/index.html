@@ -21,7 +21,7 @@
     }
 
     th, td {
-      border: 1px solid #ccc;
+      border: 1px solid #eee;
       padding: 0.75rem;
       text-align: center;
       vertical-align: middle;
@@ -50,18 +50,11 @@
     }
 
     td.selectable.booked {
-      background-color: #f9f9f9;
-      color: #999;
-      cursor: not-allowed;
-    }
-
-    td.booked {
       background-color: #e0e0e0 !important;
-      border: 2px solid #999;
-      border-radius: 4px;
+      color: #333 !important;
+      cursor: not-allowed;
       font-weight: bold;
-      color: #333;
-      position: relative;
+      border: 1px solid #ccc;
     }
 
     .controls {
@@ -107,7 +100,7 @@
     .delete-btn {
       position: absolute;
       top: 4px;
-      right: 6px;
+      right: 4px;
       background: transparent;
       color: #e53e3e;
       border: none;
@@ -150,6 +143,7 @@
     }
   </style>
 </head>
+
 <body>
   <h1>Uke {{ week }}</h1>
   <form method="get" class="print-hide" id="week-form">
@@ -168,16 +162,14 @@
       <td>{{ time }}</td>
       {% for day in days %}
         {% set booking = bookings.get((day, time)) %}
-        {% if booking %}
-        <td class="selectable booked" data-day="{{day}}" data-time="{{time}}" data-id="{{ booking.id }}">
-          <div class="booking-content">
-            {{ booking.name }}
-            <button class="delete-btn print-hide" data-id="{{ booking.id }}">❌</button>
-          </div>
+        <td class="selectable {% if booking %}booked{% endif %}" data-day="{{day}}" data-time="{{time}}" data-id="{{ booking.id if booking }}">
+          {% if booking %}
+            <div class="booking-content">
+              {{ booking.name }}
+              <button class="delete-btn print-hide" data-id="{{ booking.id }}">❌</button>
+            </div>
+          {% endif %}
         </td>
-        {% else %}
-        <td class="selectable" data-day="{{day}}" data-time="{{time}}"></td>
-        {% endif %}
       {% endfor %}
     </tr>
     {% endfor %}
@@ -203,42 +195,34 @@
   <script>
     let selected = [];
 
-    function updateSelectionSummary() {
-      if (selected.length === 0) {
+    const updateSummary = () => {
+      if (selected.length == 0) {
         document.getElementById("selection-summary").textContent = "Ingen valgt";
         return;
       }
-
       const sorted = selected.slice().sort((a, b) => a.time.localeCompare(b.time));
       const day = sorted[0].day;
-      const start = sorted[0].time;
-      let end = sorted[sorted.length - 1].time;
-
-      if (sorted.length === 1) {
-        const [h, m] = end.split(":").map(Number);
-        const date = new Date();
-        date.setHours(h);
-        date.setMinutes(m + 30);
-        end = date.toTimeString().slice(0, 5);
-      }
-
-      document.getElementById("selection-summary").textContent = `${day}: ${start} – ${end}`;
-    }
+      const from = sorted[0].time;
+      const to = sorted[sorted.length - 1].time;
+      const [h, m] = to.split(':');
+      const end = (parseInt(m) === 0) ? `${h}:30` : `${(parseInt(h) + 1).toString().padStart(2, '0')}:00`;
+      document.getElementById("selection-summary").textContent = `${day}: ${from} - ${end}`;
+    };
 
     document.querySelectorAll("td.selectable").forEach(td => {
       td.addEventListener("click", () => {
         if (td.classList.contains("booked")) return;
         const day = td.dataset.day;
         const time = td.dataset.time;
-        const index = selected.findIndex(s => s.day === day && s.time === time);
-        if (index >= 0) {
-          selected.splice(index, 1);
+        const idx = selected.findIndex(s => s.day === day && s.time === time);
+        if (idx >= 0) {
+          selected.splice(idx, 1);
           td.classList.remove("selected");
         } else {
           selected.push({ day, time });
           td.classList.add("selected");
         }
-        updateSelectionSummary();
+        updateSummary();
       });
     });
 
@@ -246,30 +230,27 @@
       const name = document.getElementById("meeting-name").value.trim();
       const repeat = document.getElementById("repeat-weekly").checked;
       const pin = document.getElementById("pin").value.trim();
-      if (!name || selected.length === 0 || !pin) {
-        alert("Fyll inn navn, PIN og velg minst én tid.");
-        return;
-      }
+      if (!name || selected.length === 0 || !pin) return alert("Fyll inn navn, PIN og velg tider.");
 
-      const response = await fetch("/book", {
+      const res = await fetch("/book", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ week: "{{ week }}", name, slots: selected, repeat, pin })
       });
 
-      if (response.ok) location.reload();
-      else alert("Noe gikk galt ved booking.");
+      if (res.ok) location.reload();
     });
 
     document.querySelectorAll(".delete-btn").forEach(btn => {
-      btn.addEventListener("click", async e => {
+      btn.addEventListener("click", async (e) => {
         e.stopPropagation();
-        const pin = prompt("Skriv inn PIN for å slette:");
+        const id = btn.dataset.id;
+        const pin = prompt("Skriv inn PIN for å slette booking:");
         if (!pin) return;
         const res = await fetch("/delete", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: btn.dataset.id, pin })
+          body: JSON.stringify({ id, pin })
         });
         if (res.ok) location.reload();
         else alert("Feil PIN eller booking finnes ikke.");
