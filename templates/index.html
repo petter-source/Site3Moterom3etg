@@ -21,7 +21,7 @@
     }
 
     th, td {
-      border: 1px solid #eee;
+      border: 1px solid #ccc;
       padding: 0.75rem;
       text-align: center;
       vertical-align: middle;
@@ -53,6 +53,15 @@
       background-color: #f9f9f9;
       color: #999;
       cursor: not-allowed;
+    }
+
+    td.booked {
+      background-color: #ffdede !important;
+      border: 2px solid #ff5a5a;
+      border-radius: 4px;
+      font-weight: bold;
+      color: #660000;
+      position: relative;
     }
 
     .controls {
@@ -96,39 +105,9 @@
     }
 
     .delete-btn {
-      background: #e53e3e;
-      color: white;
-      border: none;
-      padding: 0.3rem 0.6rem;
-      border-radius: 4px;
-      font-size: 0.8rem;
-      cursor: pointer;
-    }
-
-    .delete-btn:hover {
-      background: #c53030;
-    }
-
-    .print-hide { display: block; }
-
-    @media print {
-      .print-hide { display: none; }
-      th, td { font-size: 10px; padding: 4px; }
-    }
-    .booking-content {
-      position: relative;
-      display: block;
-      padding: 0.4rem 1rem 0.4rem 0.4rem;
-      text-align: left;
-      font-size: 0.85rem;
-      line-height: 1.2;
-      min-height: 1.5em;
-    }
-
-    .delete-btn {
       position: absolute;
       top: 4px;
-      right: 4px;
+      right: 6px;
       background: transparent;
       color: #e53e3e;
       border: none;
@@ -141,10 +120,30 @@
 
     .delete-btn:hover {
       color: #c53030;
-      transform: scale(1.15);
+      transform: scale(1.1);
+    }
+
+    .print-hide { display: block; }
+
+    @media print {
+      .print-hide { display: none; }
+      th, td {
+        font-size: 10px;
+        padding: 4px;
+        border: 1px solid #000 !important;
+      }
+    }
+
+    .booking-content {
+      position: relative;
+      display: block;
+      padding: 0.4rem 1rem 0.4rem 0.4rem;
+      text-align: left;
+      font-size: 0.85rem;
+      line-height: 1.2;
+      min-height: 1.5em;
     }
   </style>
-
 </head>
 <body>
   <h1>Uke {{ week }}</h1>
@@ -164,14 +163,16 @@
       <td>{{ time }}</td>
       {% for day in days %}
         {% set booking = bookings.get((day, time)) %}
-        <td class="selectable" data-day="{{day}}" data-time="{{time}}" data-id="{{ booking.id if booking }}">
-          {% if booking %}
-            <div class="booking-content">
-              {{ booking.name }}
-              <button class="delete-btn print-hide" data-id="{{ booking.id }}">✖</button>
-            </div>
-          {% endif %}
+        {% if booking %}
+        <td class="selectable booked" data-day="{{day}}" data-time="{{time}}" data-id="{{ booking.id }}">
+          <div class="booking-content">
+            {{ booking.name }}
+            <button class="delete-btn print-hide" data-id="{{ booking.id }}">❌</button>
+          </div>
         </td>
+        {% else %}
+        <td class="selectable" data-day="{{day}}" data-time="{{time}}"></td>
+        {% endif %}
       {% endfor %}
     </tr>
     {% endfor %}
@@ -197,30 +198,42 @@
   <script>
     let selected = [];
 
-    const updateSummary = () => {
-      if (selected.length == 0) {
+    function updateSelectionSummary() {
+      if (selected.length === 0) {
         document.getElementById("selection-summary").textContent = "Ingen valgt";
         return;
       }
-      const times = selected.map(s => s.time).sort();
-      const day = selected[0].day;
-      document.getElementById("selection-summary").textContent = `${day}: ${times[0]} - ${times[times.length - 1]}`;
-    };
+
+      const sorted = selected.slice().sort((a, b) => a.time.localeCompare(b.time));
+      const day = sorted[0].day;
+      const start = sorted[0].time;
+      let end = sorted[sorted.length - 1].time;
+
+      if (sorted.length === 1) {
+        const [h, m] = end.split(":").map(Number);
+        const date = new Date();
+        date.setHours(h);
+        date.setMinutes(m + 30);
+        end = date.toTimeString().slice(0, 5);
+      }
+
+      document.getElementById("selection-summary").textContent = `${day}: ${start} – ${end}`;
+    }
 
     document.querySelectorAll("td.selectable").forEach(td => {
       td.addEventListener("click", () => {
-        if (td.querySelector("button")) return;  // Skip booked
+        if (td.classList.contains("booked")) return;
         const day = td.dataset.day;
         const time = td.dataset.time;
-        const idx = selected.findIndex(s => s.day === day && s.time === time);
-        if (idx >= 0) {
-          selected.splice(idx, 1);
+        const index = selected.findIndex(s => s.day === day && s.time === time);
+        if (index >= 0) {
+          selected.splice(index, 1);
           td.classList.remove("selected");
         } else {
           selected.push({ day, time });
           td.classList.add("selected");
         }
-        updateSummary();
+        updateSelectionSummary();
       });
     });
 
@@ -228,27 +241,30 @@
       const name = document.getElementById("meeting-name").value.trim();
       const repeat = document.getElementById("repeat-weekly").checked;
       const pin = document.getElementById("pin").value.trim();
-      if (!name || selected.length === 0 || !pin) return alert("Fyll inn navn, PIN og velg tider.");
+      if (!name || selected.length === 0 || !pin) {
+        alert("Fyll inn navn, PIN og velg minst én tid.");
+        return;
+      }
 
-      const res = await fetch("/book", {
+      const response = await fetch("/book", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ week: "{{ week }}", name, slots: selected, repeat, pin })
       });
 
-      if (res.ok) location.reload();
+      if (response.ok) location.reload();
+      else alert("Noe gikk galt ved booking.");
     });
 
     document.querySelectorAll(".delete-btn").forEach(btn => {
-      btn.addEventListener("click", async (e) => {
+      btn.addEventListener("click", async e => {
         e.stopPropagation();
-        const id = btn.dataset.id;
-        const pin = prompt("Skriv inn PIN for å slette booking:");
+        const pin = prompt("Skriv inn PIN for å slette:");
         if (!pin) return;
         const res = await fetch("/delete", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id, pin })
+          body: JSON.stringify({ id: btn.dataset.id, pin })
         });
         if (res.ok) location.reload();
         else alert("Feil PIN eller booking finnes ikke.");
