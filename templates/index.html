@@ -27,12 +27,13 @@
       vertical-align: middle;
       transition: background 0.2s ease, box-shadow 0.2s ease;
     }
-    
+
     td:first-child {
       vertical-align: top;
       padding-top: 0.5rem;
       padding-bottom: 0.25rem;
-    
+    }
+
     th {
       background: #fafafa;
       font-weight: 600;
@@ -167,7 +168,10 @@
       <td>{{ time }}</td>
       {% for day in days %}
         {% set booking = bookings.get((day, time)) %}
-        <td class="selectable {% if booking %}booked{% endif %}" data-day="{{day}}" data-time="{{time}}" data-id="{{ booking.id if booking }}">
+        <td class="{% if booking %}selectable booked{% else %}selectable{% endif %}"
+            data-day="{{ day }}"
+            data-time="{{ time }}"
+            data-id="{{ booking.id if booking }}">
           {% if booking %}
             <div class="booking-content">
               {{ booking.name }}
